@@ -82,7 +82,11 @@ func (action *TransactionIndexAction) loadRecords() {
 		txs.ForLedger(action.LedgerFilter)
 	}
 
-	action.Err = txs.Page(action.PagingParams).Select(&action.Records)
+	err:=txs.Page(action.PagingParams).Select(&action.Records)
+	if q.NoRows(err){
+		return
+	}
+	action.Err=err
 }
 
 func (action *TransactionIndexAction) loadPage() {

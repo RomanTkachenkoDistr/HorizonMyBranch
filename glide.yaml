@@ -90,9 +90,9 @@ import:
 - package: github.com/Masterminds/squirrel
   version: 20f192218cf52a73397fa2df45bdda720f3e47c8
   repo: https://github.com/Masterminds/squirrel
-- package: github.com/PuerkitoBio/throttled
+- package: github.com/throttled/throttled
   version: 1c8297c643b774435df8df65f7502b37d014fb6b
-  repo: https://github.com/PuerkitoBio/throttled
+  repo: https://github.com/throttled/throttled
   subpackages:
   - store
 - package: github.com/sirupsen/logrus
