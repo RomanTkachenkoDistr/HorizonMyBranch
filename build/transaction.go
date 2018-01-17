@@ -6,6 +6,7 @@ import (
 	"github.com/stellar/go/network"
 	"github.com/stellar/go/support/errors"
 	"github.com/stellar/go/xdr"
+
 )
 
 // Transaction groups the creation of a new TransactionBuilder with a call
@@ -200,6 +201,14 @@ func (m ManageDirectDebitBuilder) MutateTransaction(o *TransactionBuilder) error
 		return m.Err
 	}
 	m.O.Body, m.Err = xdr.NewOperationBody(xdr.OperationTypeManageDirectDebit, m.CT)
+	o.TX.Operations = append(o.TX.Operations, m.O)
+	return m.Err
+}
+func (m DebitPaymentBuilder) MutateTransaction(o *TransactionBuilder) error {
+	if m.Err !=nil{
+		return m.Err
+	}
+	m.O.Body, m.Err = xdr.NewOperationBody(xdr.OperationTypeDirectDebitPayment, m.DP)
 	o.TX.Operations = append(o.TX.Operations, m.O)
 	return m.Err
 }

@@ -30,6 +30,8 @@ var TypeNames = map[history.EffectType]string{
 	history.EffectDataCreated:              "data_created",
 	history.EffectDataRemoved:              "data_removed",
 	history.EffectDataUpdated:              "data_updated",
+	history.EffectDirectDebitCreated:       "debit_created",
+	history.EffectDirectDebitRemoved:       "debit_removed",
 }
 
 // New creates a new effect resource from the provided database representation
@@ -101,6 +103,14 @@ func New(
 		result = e
 	case history.EffectTrade:
 		e := Trade{Base: basev}
+		err = row.UnmarshalDetails(&e)
+		result = e
+	case history.EffectDirectDebitCreated:
+		e := DebitCreated{Basr: basev}
+		err = row.UnmarshalDetails(&e)
+		result = e
+	case history.EffectDirectDebitRemoved:
+		e := DebitRemoved{Base: basev}
 		err = row.UnmarshalDetails(&e)
 		result = e
 	default:
@@ -236,7 +246,16 @@ type Trade struct {
 	BoughtAssetCode   string `json:"bought_asset_code,omitempty"`
 	BoughtAssetIssuer string `json:"bought_asset_issuer,omitempty"`
 }
-
+type DebitCreated struct {
+	Base
+	base.Asset
+	Debitor string `json:"debitor"`
+}
+type DebitRemoved struct {
+	Base
+	base.Asset
+	Debitor string `json:"debitor"`
+}
 // interface implementations
 var _ base.Rehydratable = &SignerCreated{}
 var _ base.Rehydratable = &SignerRemoved{}

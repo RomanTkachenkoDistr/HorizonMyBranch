@@ -97,6 +97,9 @@ const (
 	// EffectDataUpdated occurs when an account changes a data field's value
 	EffectDataUpdated EffectType = 42 // from manage_data
 
+	EffectDirectDebitCreated EffectType = 47
+	EffectDirectDebitRemoved EffectType =48
+
 )
 
 // Account is a row of data from the `history_accounts` table

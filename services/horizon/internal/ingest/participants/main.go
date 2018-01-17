@@ -44,6 +44,11 @@ func ForOperation(
 		// the only direct participant is the source_account
 	case xdr.OperationTypeManageData:
 		// the only direct participant is the source_account
+	case xdr.OperationTypeManageDirectDebit:
+		result = append (result, op.Body.MustManageDirectDebitOp().Debitor)
+	case xdr.OperationTypeDirectDebitPayment:
+		result = append (result, op.Body.MustDirectDebitPaymentOp().Creditor)
+		result = append (result, op.Body.MustDirectDebitPaymentOp().Payment.Destination)
 	default:
 		err = fmt.Errorf("Unknown operation type: %s", op.Body.Type)
 	}

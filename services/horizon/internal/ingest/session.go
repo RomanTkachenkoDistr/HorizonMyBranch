@@ -303,6 +303,49 @@ func (is *Session) ingestEffects() {
 		}
 
 		effects.Add(source, effect, dets)
+	case xdr.OperationTypeManageDirectDebit:
+		op := opbody.MustManageDirectDebitOp()
+		dets := map[string]interface{}{
+			"creditor": source,
+			"debitor":  op.Debitor,
+		}
+		is.assetDetails(dets,op.Asset,"")
+		key := xdr.LedgerKey{}
+		effect := history.EffectType(0)
+
+		key.SetDirectDebit(op.Debitor,source, op.Line)
+
+		before, after, err := is.Cursor.BeforeAndAfter(key)
+
+		// NOTE:  when an account trusts itself, the transaction is successful but
+		// no ledger entries are actually modified, leading to an "empty meta"
+		// situation.  We simply continue on to the next operation in that scenario.
+		if err == meta.ErrMetaNotFound {
+			return
+		}
+
+		if err != nil {
+			is.Err = err
+			return
+		}
+
+		switch {
+		case before == nil && after != nil:
+			effect = history.EffectDirectDebitCreated
+		case before != nil && after == nil:
+			effect = history.EffectDirectDebitRemoved
+
+		default:
+			panic("Invalid before-and-after state")
+		}
+
+		effects.Add(source, effect, dets)
+	case xdr.OperationTypeDirectDebitPayment:
+		op := opbody.MustDirectDebitPaymentOp()
+		dets := map[string]interface{}{"amount": amount.String(op.Payment.Amount)}
+		is.assetDetails(dets, op.Payment.Asset, "")
+		effects.Add(op.Destination, history.EffectAccountCredited, dets)
+		effects.Add(op.Creditor, history.EffectAccountDebited, dets)
 
 	default:
 		is.Err = fmt.Errorf("Unknown operation type: %s", is.Cursor.OperationType())
@@ -725,6 +768,18 @@ func (is *Session) operationDetails() map[string]interface{} {
 		} else {
 			details["value"] = nil
 		}
+	case xdr.OperationTypeManageDirectDebit:
+		op := c.Operation().Body.MustManageDirectDebitOp()
+		details["creditor"] = source.Address()
+		details["debitor"] = op.Debitor.Address()
+		is.assetDetails(details, op.Asset, "")
+	case xdr.OperationTypeDirectDebitPayment:
+		op := c.Operation().Body.MustDirectDebitPaymentOp()
+		details["creditor"] = op.Creditor.Address()
+		details["debitor"] = source.Address()
+		details["destination"] = op.Payment.Destination.Address()
+		details["amount"]= amount.String(op.Payment.Amount)
+		is.assetDetails(details,op.Payment.Asset,"")
 	default:
 		panic(fmt.Errorf("Unknown operation type: %s", c.OperationType()))
 	}

@@ -30,6 +30,13 @@ func (entry *LedgerEntry) LedgerKey() LedgerKey {
 			AccountId: tline.AccountId,
 			Asset:     tline.Asset,
 		}
+	case LedgerEntryTypeDirectDebit:
+		debit := entry.Data.MustDirectDebit()
+		body = LedgerKeyDirectDebit{
+			Debitor : debit.Debitor,
+			Creditor: debit.Creditor,
+			Asset:    debit.Asset,
+		}
 	default:
 		panic(fmt.Errorf("Unknown entry type: %v", entry.Data.Type))
 	}

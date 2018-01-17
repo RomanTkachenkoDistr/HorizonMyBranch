@@ -94,7 +94,9 @@ type Defaults struct{}
 type Destination struct {
 	AddressOrSeed string
 }
-
+type Creditor struct {
+	AddressOrSeed string
+}
 // InflationDest is a mutator capable of setting the inflation destination
 type InflationDest string
 

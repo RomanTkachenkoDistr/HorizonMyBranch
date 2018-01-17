@@ -30,6 +30,10 @@ func (key *LedgerKey) Equals(other LedgerKey) bool {
 		l := key.MustTrustLine()
 		r := other.MustTrustLine()
 		return l.AccountId.Equals(r.AccountId) && l.Asset.Equals(r.Asset)
+	case LedgerEntryTypeDirectDebit:
+		l := key.MustDirectDebit()
+		r := other.MustDirectDebit()
+		return l.Creditor.Equals(r.Creditor) && l.Asset.Equals(r.Asset) && l.Debitor.Equals(r.Debitor)
 	default:
 		panic(fmt.Errorf("Unknown ledger key type: %v", key.Type))
 	}
@@ -82,6 +86,15 @@ func (key *LedgerKey) SetTrustline(account AccountId, line Asset) error {
 		return err
 	}
 
+	*key = nkey
+	return nil
+}
+func (key *LedgerKey) SetDirectDebit(debitor AccountId, creditor AccountId, asset Asset) error {
+	data := LedgerKeyDirectDebit{debitor,creditor,asset}
+	nkey,err :=NewLedgerKey(LedgerEntryTypeDirectDebit, data)
+	if err != nil {
+		return err
+	}
 	*key = nkey
 	return nil
 }

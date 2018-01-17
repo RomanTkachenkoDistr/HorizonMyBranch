@@ -24,6 +24,8 @@ var TypeNames = map[xdr.OperationType]string{
 	xdr.OperationTypeAccountMerge:       "account_merge",
 	xdr.OperationTypeInflation:          "inflation",
 	xdr.OperationTypeManageData:         "manage_data",
+	xdr.OperationTypeManageDirectDebit:  "manage_debit",
+	xdr.OperationTypeDirectDebitPayment: "debit_payment",
 }
 
 // New creates a new operation resource, finding the appropriate type to use
@@ -82,6 +84,14 @@ func New(
 		result = e
 	case xdr.OperationTypeManageData:
 		e := ManageData{Base: base}
+		err = row.UnmarshalDetails(&e)
+		result = e
+	case xdr.OperationTypeManageDirectDebit:
+		e := ManageDebit{Base: base}
+		err = row.UnmarshalDetails(&e)
+		result = e
+	case xdr.OperationTypeDirectDebitPayment:
+		e := DebitPayment{Base: base}
 		err = row.UnmarshalDetails(&e)
 		result = e
 	default:
@@ -223,4 +233,19 @@ type AccountMerge struct {
 // Inflation.
 type Inflation struct {
 	Base
+}
+type ManageDebit struct {
+	Base
+	base.Asset
+	Creditor string `json:"creditor"`
+	Debitor string `json:"debitor"`
+	CancelDebit bool `json:"cancel_debit_flag"`
+}
+type DebitPayment struct {
+	Base
+	base.Asset
+	Creditor string `json:"creditor"`
+	Debitor string `json:"debitor"`
+	Amount string `json:"amount"`
+	Destination string `json:"destination"`
 }

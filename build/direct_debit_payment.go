@@ -25,7 +25,6 @@ type DebitPaymentBuilder struct {
 
 	O           xdr.Operation
 	DP          xdr.DirectDebitPaymentOp
-	P           xdr.PaymentOp
 	Err         error
 }
 
@@ -51,36 +50,19 @@ func (b *DebitPaymentBuilder) Mutate(muts ...interface{}) {
 
 // MutatePayment for Asset sets the PaymentOp's Asset field
 func (m CreditAmount) MutateDebitPayment(o interface{}) (err error) {
-	switch o := o.(type) {
-	default:
-		err = errors.New("Unexpected operation type")
-	case *xdr.PaymentOp:
-		o.Amount, err = amount.Parse(m.Amount)
+
+		o.(*xdr.DirectDebitPaymentOp).Payment.Amount, err = amount.Parse(m.Amount)
 		if err != nil {
 			return
 		}
+		o.(*xdr.DirectDebitPaymentOp).Payment.Asset, err = createAlphaNumAsset(m.Code, m.Issuer)
 
-		o.Asset, err = createAlphaNumAsset(m.Code, m.Issuer)
-	case *xdr.PathPaymentOp:
-		o.DestAmount, err = amount.Parse(m.Amount)
-		if err != nil {
-			return
-		}
+		return
 
-		o.DestAsset, err = createAlphaNumAsset(m.Code, m.Issuer)
-	}
-	return
 }
 
-// MutatePayment for Destination sets the PaymentOp's Destination field
 func (m Destination) MutateDebitPayment(o interface{}) error {
-	switch o := o.(type) {
-	default:
-		return errors.New("Unexpected operation type")
-	case *xdr.DirectDebitPaymentOp:
-		return setAccountId(m.AddressOrSeed, &o.Creditor)
-
-	}
+		return setAccountId(m.AddressOrSeed, &o.(*xdr.DirectDebitPaymentOp).Payment.Destination)
 }
 
 // MutatePayment for NativeAmount sets the PaymentOp's currency field to
@@ -110,5 +92,8 @@ func (m PaymentOp) MutateDebitPayment(o interface{}) (err error) {
 	}
 
 	return
+}
+func (m Creditor) MutateDebitPayment(o interface{})(err error){
+	return setAccountId(m.AddressOrSeed, &o.(*xdr.DirectDebitPaymentOp).Creditor)
 }
 
