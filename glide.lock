@@ -300,7 +300,7 @@ imports:
   - fasthttputil
   - stackless
 - name: github.com/visionmedia/go-debug
-  version: ff4a55a20a86994118644bbddc6a216da193cc13
+  version: bfacf9d8a444b50f5d7ae47727544e775486966f
   repo: https://github.com/visionmedia/go-debug
 - name: github.com/xeipuuv/gojsonpointer
   version: e0fe6f68307607d540ed8eac07a342c33fa1b54a
