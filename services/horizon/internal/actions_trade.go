@@ -2,12 +2,14 @@ package horizon
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/stellar/go/services/horizon/internal/db2"
 	"github.com/stellar/go/services/horizon/internal/db2/history"
 	"github.com/stellar/go/services/horizon/internal/render/hal"
 	"github.com/stellar/go/services/horizon/internal/resource"
+	halRender "github.com/stellar/go/support/render/hal"
 	"github.com/stellar/go/support/time"
 	"github.com/stellar/go/xdr"
 )
@@ -18,6 +20,7 @@ type TradeIndexAction struct {
 	HasBaseAssetFilter    bool
 	CounterAssetFilter    xdr.Asset
 	HasCounterAssetFilter bool
+	OfferFilter           int64
 	PagingParams          db2.PageQuery
 	Records               []history.Trade
 	Page                  hal.Page
@@ -31,7 +34,7 @@ func (action *TradeIndexAction) JSON() {
 		action.loadRecords,
 		action.loadPage,
 		func() {
-			hal.Render(action.W, action.Page)
+			halRender.Render(action.W, action.Page)
 		},
 	)
 }
@@ -41,6 +44,7 @@ func (action *TradeIndexAction) loadParams() {
 	action.PagingParams = action.GetPageQuery()
 	action.BaseAssetFilter, action.HasBaseAssetFilter = action.MaybeGetAsset("base_")
 	action.CounterAssetFilter, action.HasCounterAssetFilter = action.MaybeGetAsset("counter_")
+	action.OfferFilter = action.GetInt64("offer_id")
 }
 
 // loadRecords populates action.Records
@@ -68,6 +72,11 @@ func (action *TradeIndexAction) loadRecords() {
 			return
 		}
 	}
+
+	if action.OfferFilter > int64(0) {
+		trades = trades.ForOffer(action.OfferFilter)
+	}
+
 	action.Err = trades.Page(action.PagingParams).Select(&action.Records)
 }
 
@@ -84,8 +93,7 @@ func (action *TradeIndexAction) loadPage() {
 		action.Page.Add(res)
 	}
 
-	action.Page.BaseURL = action.BaseURL()
-	action.Page.BasePath = action.Path()
+	action.Page.FullURL = action.FullURL()
 	action.Page.Limit = action.PagingParams.Limit
 	action.Page.Cursor = action.PagingParams.Cursor
 	action.Page.Order = action.PagingParams.Order
@@ -112,7 +120,7 @@ func (action *TradeAggregateIndexAction) JSON() {
 		action.loadRecords,
 		action.loadPage,
 		func() {
-			hal.Render(action.W, action.Page)
+			halRender.Render(action.W, action.Page)
 		},
 	)
 }
@@ -172,9 +180,7 @@ func (action *TradeAggregateIndexAction) loadPage() {
 	action.Page.Limit = action.PagingParams.Limit
 	action.Page.Order = action.PagingParams.Order
 
-	newUrl := action.BaseURL()              // preserve scheme and host for the new url links
-	newUrl.RawQuery = action.R.URL.RawQuery //preserve query parameters
-	newUrl.Path = action.Path()             //preserve path
+	newUrl := action.FullURL() // preserve scheme and host for the new url links
 	q := newUrl.Query()
 
 	action.Page.Links.Self = hal.NewLink(newUrl.String())
@@ -201,4 +207,79 @@ func (action *TradeAggregateIndexAction) loadPage() {
 			action.Page.Links.Next = hal.NewLink(newUrl.String())
 		}
 	}
+}
+
+// TradeEffectIndexAction
+type TradeEffectIndexAction struct {
+	Action
+	AccountFilter string
+	PagingParams  db2.PageQuery
+	Records       []history.Effect
+	Ledgers       history.LedgerCache
+	Page          hal.Page
+}
+
+// JSON is a method for actions.JSON
+func (action *TradeEffectIndexAction) JSON() {
+	action.Do(
+		action.EnsureHistoryFreshness,
+		action.loadParams,
+		action.loadRecords,
+		action.loadLedgers,
+		action.loadPage,
+		func() {
+			halRender.Render(action.W, action.Page)
+		},
+	)
+}
+
+// loadLedgers populates the ledger cache for this action
+func (action *TradeEffectIndexAction) loadLedgers() {
+	if action.Err != nil {
+		return
+	}
+
+	for _, trade := range action.Records {
+		action.Ledgers.Queue(trade.LedgerSequence())
+	}
+
+	action.Err = action.Ledgers.Load(action.HistoryQ())
+}
+
+func (action *TradeEffectIndexAction) loadParams() {
+	action.AccountFilter = action.GetString("account_id")
+	action.PagingParams = action.GetPageQuery()
+}
+
+func (action *TradeEffectIndexAction) loadRecords() {
+	trades := action.HistoryQ().Effects().OfType(history.EffectTrade).ForAccount(action.AccountFilter)
+
+	action.Err = trades.Page(action.PagingParams).Select(&action.Records)
+}
+
+// loadPage populates action.Page
+func (action *TradeEffectIndexAction) loadPage() {
+	for _, record := range action.Records {
+		var res resource.TradeEffect
+
+		ledger, found := action.Ledgers.Records[record.LedgerSequence()]
+		if !found {
+			msg := fmt.Sprintf("could not find ledger data for sequence %d", record.LedgerSequence())
+			action.Err = errors.New(msg)
+			return
+		}
+
+		action.Err = res.PopulateFromEffect(action.Ctx, record, ledger)
+		if action.Err != nil {
+			return
+		}
+
+		action.Page.Add(res)
+	}
+
+	action.Page.FullURL = action.FullURL()
+	action.Page.Limit = action.PagingParams.Limit
+	action.Page.Cursor = action.PagingParams.Cursor
+	action.Page.Order = action.PagingParams.Order
+	action.Page.PopulateLinks()
 }

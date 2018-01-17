@@ -6,10 +6,12 @@ import (
 	"github.com/stellar/go/services/horizon/internal/db2"
 	"github.com/stellar/go/services/horizon/internal/db2/history"
 	"github.com/stellar/go/services/horizon/internal/render/hal"
-	"github.com/stellar/go/services/horizon/internal/render/problem"
+	hProblem "github.com/stellar/go/services/horizon/internal/render/problem"
 	"github.com/stellar/go/services/horizon/internal/render/sse"
 	"github.com/stellar/go/services/horizon/internal/resource"
 	"github.com/stellar/go/services/horizon/internal/txsub"
+	halRender "github.com/stellar/go/support/render/hal"
+	"github.com/stellar/go/support/render/problem"
 )
 
 // This file contains the actions:
@@ -37,7 +39,7 @@ func (action *TransactionIndexAction) JSON() {
 		action.loadRecords,
 		action.loadPage,
 		func() {
-			hal.Render(action.W, action.Page)
+			halRender.Render(action.W, action.Page)
 		},
 	)
 }
@@ -82,7 +84,11 @@ func (action *TransactionIndexAction) loadRecords() {
 		txs.ForLedger(action.LedgerFilter)
 	}
 
-	action.Err = txs.Page(action.PagingParams).Select(&action.Records)
+	err:=txs.Page(action.PagingParams).Select(&action.Records)
+	if q.NoRows(err){
+		return
+	}
+	action.Err=err
 }
 
 func (action *TransactionIndexAction) loadPage() {
@@ -92,8 +98,7 @@ func (action *TransactionIndexAction) loadPage() {
 		action.Page.Add(res)
 	}
 
-	action.Page.BaseURL = action.BaseURL()
-	action.Page.BasePath = action.Path()
+	action.Page.FullURL = action.FullURL()
 	action.Page.Limit = action.PagingParams.Limit
 	action.Page.Cursor = action.PagingParams.Cursor
 	action.Page.Order = action.PagingParams.Order
@@ -127,7 +132,7 @@ func (action *TransactionShowAction) JSON() {
 		action.loadParams,
 		action.loadRecord,
 		action.loadResource,
-		func() { hal.Render(action.W, action.Resource) },
+		func() { halRender.Render(action.W, action.Resource) },
 	)
 }
 
@@ -148,7 +153,7 @@ func (action *TransactionCreateAction) JSON() {
 		action.loadResource,
 
 		func() {
-			hal.Render(action.W, action.Resource)
+			halRender.Render(action.W, action.Resource)
 		})
 }
 
@@ -164,7 +169,7 @@ func (action *TransactionCreateAction) loadResult() {
 	case result := <-submission:
 		action.Result = result
 	case <-action.Ctx.Done():
-		action.Err = &problem.Timeout
+		action.Err = &hProblem.Timeout
 	}
 }
 
@@ -175,12 +180,12 @@ func (action *TransactionCreateAction) loadResource() {
 	}
 
 	if action.Result.Err == txsub.ErrTimeout {
-		action.Err = &problem.Timeout
+		action.Err = &hProblem.Timeout
 		return
 	}
 
 	if action.Result.Err == txsub.ErrCanceled {
-		action.Err = &problem.Timeout
+		action.Err = &hProblem.Timeout
 		return
 	}
 
