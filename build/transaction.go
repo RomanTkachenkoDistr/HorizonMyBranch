@@ -194,6 +194,15 @@ func (m ManageDataBuilder) MutateTransaction(o *TransactionBuilder) error {
 	o.TX.Operations = append(o.TX.Operations, m.O)
 	return m.Err
 }
+func (m ManageDirectDebitBuilder) MutateTransaction(o *TransactionBuilder) error {
+
+	if m.Err != nil {
+		return m.Err
+	}
+	m.O.Body, m.Err = xdr.NewOperationBody(xdr.OperationTypeManageDirectDebit, m.CT)
+	o.TX.Operations = append(o.TX.Operations, m.O)
+	return m.Err
+}
 
 // MutateTransaction for ManageOfferBuilder causes the underylying
 // ManageData to be added to the operation list for the provided

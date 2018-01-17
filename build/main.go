@@ -149,7 +149,11 @@ type PayWithPath struct {
 	MaxAmount string
 	Path      []Asset
 }
-
+type PaymentOp struct{
+	asset Asset
+	amount string
+	dest string
+}
 // Through appends a new asset to the path
 func (pathSend PayWithPath) Through(asset Asset) PayWithPath {
 	pathSend.Path = append(pathSend.Path, asset)
@@ -238,3 +242,5 @@ func (n *Network) ID() [32]byte {
 type BaseFee struct {
 	Amount uint64
 }
+
+type CancelDebit bool
