@@ -106,7 +106,7 @@ func New(
 		err = row.UnmarshalDetails(&e)
 		result = e
 	case history.EffectDirectDebitCreated:
-		e := DebitCreated{Basr: basev}
+		e := DebitCreated{Base: basev}
 		err = row.UnmarshalDetails(&e)
 		result = e
 	case history.EffectDirectDebitRemoved:

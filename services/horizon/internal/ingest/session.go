@@ -313,7 +313,7 @@ func (is *Session) ingestEffects() {
 		key := xdr.LedgerKey{}
 		effect := history.EffectType(0)
 
-		key.SetDirectDebit(op.Debitor,source, op.Line)
+		key.SetDirectDebit(op.Debitor,source, op.Asset)
 
 		before, after, err := is.Cursor.BeforeAndAfter(key)
 
@@ -344,7 +344,7 @@ func (is *Session) ingestEffects() {
 		op := opbody.MustDirectDebitPaymentOp()
 		dets := map[string]interface{}{"amount": amount.String(op.Payment.Amount)}
 		is.assetDetails(dets, op.Payment.Asset, "")
-		effects.Add(op.Destination, history.EffectAccountCredited, dets)
+		effects.Add(op.Payment.Destination, history.EffectAccountCredited, dets)
 		effects.Add(op.Creditor, history.EffectAccountDebited, dets)
 
 	default:
