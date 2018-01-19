@@ -152,9 +152,9 @@ type PayWithPath struct {
 	Path      []Asset
 }
 type PaymentOp struct{
-	asset Asset
-	amount string
-	dest string
+	Asset Asset
+	Amount string
+	Dest string
 }
 // Through appends a new asset to the path
 func (pathSend PayWithPath) Through(asset Asset) PayWithPath {

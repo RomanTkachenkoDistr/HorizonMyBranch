@@ -7,20 +7,18 @@ import (
 
 )
 
-// Payment groups the creation of a new PaymentBuilder with a call to Mutate.
+
 func DebitPayment(muts ...interface{}) (result DebitPaymentBuilder) {
 	result.Mutate(muts...)
 	return
 }
 
-// PaymentMutator is a interface that wraps the
-// MutatePayment operation.  types may implement this interface to
-// specify how they modify an xdr.PaymentOp object
+
 type DebitPaymentMutator interface {
 	MutateDebitPayment(interface{}) error
 }
 
-// PaymentBuilder represents a transaction that is being built.
+
 type DebitPaymentBuilder struct {
 
 	O           xdr.Operation
@@ -28,7 +26,7 @@ type DebitPaymentBuilder struct {
 	Err         error
 }
 
-// Mutate applies the provided mutators to this builder's payment or operation.
+
 func (b *DebitPaymentBuilder) Mutate(muts ...interface{}) {
 	for _, m := range muts {
 		var err error
@@ -48,7 +46,6 @@ func (b *DebitPaymentBuilder) Mutate(muts ...interface{}) {
 	}
 }
 
-// MutatePayment for Asset sets the PaymentOp's Asset field
 func (m CreditAmount) MutateDebitPayment(o interface{}) (err error) {
 
 		o.(*xdr.DirectDebitPaymentOp).Payment.Amount, err = amount.Parse(m.Amount)
@@ -65,11 +62,7 @@ func (m Destination) MutateDebitPayment(o interface{}) error {
 		return setAccountId(m.AddressOrSeed, &o.(*xdr.DirectDebitPaymentOp).Payment.Destination)
 }
 
-// MutatePayment for NativeAmount sets the PaymentOp's currency field to
-// native and sets its amount to the provided intege
 
-// MutatePayment for PayWithPath sets the PathPaymentOp's SendAsset,
-// SendMax and Path fields
 func (m PaymentOp) MutateDebitPayment(o interface{}) (err error) {
 	var Pay *xdr.DirectDebitPaymentOp
 	var ok bool
@@ -78,15 +71,15 @@ func (m PaymentOp) MutateDebitPayment(o interface{}) (err error) {
 	}
 
 	// MaxAmount
-	Pay.Payment.Amount, err = amount.Parse(m.amount)
+	Pay.Payment.Amount, err = amount.Parse(m.Amount)
 	if err != nil {
 		return
 	}
-	Pay.Payment.Asset,err = m.asset.ToXDR()
+	Pay.Payment.Asset,err = m.Asset.ToXDR()
 	if err != nil {
 		return
 	}
-	err=setAccountId(m.dest,&Pay.Payment.Destination)
+	err=setAccountId(m.Dest,&Pay.Payment.Destination)
 	if err != nil {
 		return
 	}
@@ -96,4 +89,14 @@ func (m PaymentOp) MutateDebitPayment(o interface{}) (err error) {
 func (m Creditor) MutateDebitPayment(o interface{})(err error){
 	return setAccountId(m.AddressOrSeed, &o.(*xdr.DirectDebitPaymentOp).Creditor)
 }
+func DirectDebitPayment(pay PaymentOp, creditor Creditor,args ...interface{}) (result DebitPaymentBuilder){
+	mutators := []interface{}{
+		pay,
+		creditor,
+	}
 
+	for _, mut := range args {
+		mutators = append(mutators, mut)
+	}
+	return DebitPayment(mutators...)
+}

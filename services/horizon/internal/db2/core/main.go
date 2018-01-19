@@ -125,7 +125,13 @@ type Trustline struct {
 	Balance   xdr.Int64
 	Flags     int32
 }
-
+type DirectDebit struct {
+	Creditor string
+	Debitor string
+	Assetcode string
+	Assetissuer string
+	Assettype xdr.AssetType
+}
 // AssetFromDB produces an xdr.Asset by combining the constituent type, code and
 // issuer, as often retrieved from the DB in 3 separate columns.
 func AssetFromDB(typ xdr.AssetType, code string, issuer string) (result xdr.Asset, err error) {
@@ -174,7 +180,19 @@ func AssetFromDB(typ xdr.AssetType, code string, issuer string) (result xdr.Asse
 
 	return
 }
-
+ func DebitFromDB(debitor string) (debitorAcc xdr.AccountId,err error){
+	 decoded, err := strkey.Decode(strkey.VersionByteAccountID, debitor)
+	 if err != nil {
+		 return
+	 }
+	 var pkey xdr.Uint256
+	 copy(pkey[:], decoded)
+	 debitorAcc, err = xdr.NewAccountId(xdr.PublicKeyTypePublicKeyTypeEd25519, pkey)
+	 if err != nil {
+		 return
+	 }
+ 	return
+ }
 // ElderLedger represents the oldest "ingestable" ledger known to the
 // stellar-core database this ingestion system is communicating with.  Horizon,
 // which wants to operate on a contiguous range of ledger data (i.e. free from

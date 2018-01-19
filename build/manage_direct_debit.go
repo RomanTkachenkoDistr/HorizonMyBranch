@@ -19,7 +19,7 @@ type ManageDirectDebitMutator interface {
 
 type ManageDirectDebitBuilder struct {
 	O   xdr.Operation
-	CT  xdr.ManageDirectDebitOp
+	MDD  xdr.ManageDirectDebitOp
 	Err error
 }
 
@@ -29,7 +29,7 @@ func (b *ManageDirectDebitBuilder) Mutate(muts ...interface{}) {
 		var err error
 		switch mut := m.(type) {
 		case ManageDirectDebitMutator:
-			err = mut.MutateDirectDebit(&b.CT)
+			err = mut.MutateDirectDebit(&b.MDD)
 		case OperationMutator:
 			err = mut.MutateOperation(&b.O)
 		default:

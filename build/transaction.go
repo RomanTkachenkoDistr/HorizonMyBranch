@@ -200,7 +200,7 @@ func (m ManageDirectDebitBuilder) MutateTransaction(o *TransactionBuilder) error
 	if m.Err != nil {
 		return m.Err
 	}
-	m.O.Body, m.Err = xdr.NewOperationBody(xdr.OperationTypeManageDirectDebit, m.CT)
+	m.O.Body, m.Err = xdr.NewOperationBody(xdr.OperationTypeManageDirectDebit, m.MDD)
 	o.TX.Operations = append(o.TX.Operations, m.O)
 	return m.Err
 }
