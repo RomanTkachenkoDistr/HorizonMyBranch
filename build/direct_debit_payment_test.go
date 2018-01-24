@@ -5,12 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/stellar/go/xdr"
 
-	"testing"
 )
-
-func TestDebitPayment(t *testing.T) {
-
-}
 
 var _ = Describe("DebitPayment", func() {
 
